@@ -8,8 +8,8 @@ import path from "path";
 const app = express();
 app.use(cors());
 
-// Multer setup for file upload
-const upload = multer({ dest: "uploads/" });
+// Multer setup for file upload (in-memory storage)
+const upload = multer({ storage: multer.memoryStorage() });
 
 console.log("Connecting to IDM-VTON model...");
 let client = await Client.connect("yisol/IDM-VTON");
@@ -43,20 +43,20 @@ app.post(
           .json({ error: "Both person_image and clothing_image are required" });
       }
 
-      const personPath = req.files.person_image[0].path;
-      const clothingPath = req.files.clothing_image[0].path;
+      const personBuffer = req.files.person_image[0].buffer;
+      const clothingBuffer = req.files.clothing_image[0].buffer;
 
       console.log("Processing virtual try-on...");
-      console.log("Person:", personPath);
-      console.log("Clothing:", clothingPath);
+      console.log("Person image size:", personBuffer.length);
+      console.log("Clothing image size:", clothingBuffer.length);
 
       const result = await client.predict("/tryon", {
         dict: {
-          background: await handle_file(personPath),
+          background: await handle_file(personBuffer),
           layers: [],
           composite: null,
         },
-        garm_img: await handle_file(clothingPath),
+        garm_img: await handle_file(clothingBuffer),
         garment_des: "A beautiful garment",
         is_checked: true,
         is_checked_crop: false,
